@@ -1,0 +1,40 @@
+project:
+  raw_root: raw
+  output_root: output
+  timezone: Asia/Hong_Kong
+  week_frequency: W-MON
+  random_seed: 42
+models:
+  text_encoder: BAAI/bge-m3
+  image_encoder: openai/clip-vit-base-patch32
+  device: auto
+  text_batch_size: 16
+  image_batch_size: 16
+  offline: false
+text:
+  max_chars_per_chunk: 6000
+  normalize_embeddings: true
+comments:
+  max_comments_per_post: 500
+  sampling_seed: 42
+pooling:
+  mean: true
+  engagement_weighted_mean: true
+  std: true
+  max: false
+  min: false
+  engagement_comment_weight: 2.0
+  engagement_share_weight: 3.0
+reduction:
+  image_components: 16
+  title_components: 8
+  caption_components: 16
+  comment_components: 16
+  tag_components: 8
+splits:
+  train_end: '2024-12-30'
+  validation_end: '2025-06-30'
+  test_end: '2025-12-29'
+forecast:
+  context_length: 52
+  horizons: [1]

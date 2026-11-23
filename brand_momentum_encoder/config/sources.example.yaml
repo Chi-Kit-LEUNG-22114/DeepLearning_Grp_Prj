@@ -1,0 +1,44 @@
+sources:
+  - name: youtube_posts
+    kind: posts
+    paths: ["raw/youtube/**/*.csv"]
+    mapping:
+      video_id: post_id
+      channel_brand: brand_id
+      published_at: created_at
+      title: title
+      description: caption
+      thumbnail_path: image_path
+      view_count: views
+      like_count: likes
+      comment_count: comments_count
+    constants:
+      platform: youtube
+  - name: youtube_comments
+    kind: comments
+    paths: ["raw/youtube/**/*comments*.jsonl"]
+    mapping:
+      id: comment_id
+      video_id: post_id
+      published_at: created_at
+      text_display: text
+      like_count: likes
+  - name: instagram_posts
+    kind: posts
+    paths: ["raw/instagram/**/posts.csv"]
+    mapping:
+      shortcode: post_id
+      owner_username: brand_id
+      uploaded_at_utc: created_at
+      caption: caption
+      image_files: image_path
+      comments_count_reported: comments_count
+    constants:
+      platform: instagram
+  - name: google_trends
+    kind: trends
+    paths: ["raw/trends/**/*.{csv,parquet}"]
+    mapping:
+      Brand: brand_id
+      Week: date
+      Score: google_trends
