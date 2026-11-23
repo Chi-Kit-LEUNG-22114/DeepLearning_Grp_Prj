@@ -1,3 +1,8 @@
+# IMPORTANT
+embedding_json_package contains the aggregated JSON file brand_embedding_input.json from the other 30 brands.zip
+
+However, the embedding package and brand_momentum_encode are not aligned for encoding the information. Check the script before run.
+
 # YouTube brand data to embedding JSON
 
 ## Run
