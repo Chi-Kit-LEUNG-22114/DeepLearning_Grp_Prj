@@ -1,5 +1,6 @@
 project:
-  raw_root: raw
+  input_json: ../../embedding_json_package/build_embedding_input.json
+  raw_root: ../../other 30 brands
   output_root: output
   timezone: Asia/Hong_Kong
   week_frequency: W-MON
@@ -21,16 +22,20 @@ pooling:
   mean: true
   engagement_weighted_mean: true
   std: true
-  max: false
-  min: false
+  max: true
+  min: true
   engagement_comment_weight: 2.0
   engagement_share_weight: 3.0
 reduction:
   image_components: 16
+  clip_text_components: 16
   title_components: 8
   caption_components: 16
   comment_components: 16
   tag_components: 8
+  # Supervised transfer learning must not fit reducers on validation/test weeks.
+  # Sparse training-only embedding blocks are omitted instead of using all-week fallback PCA.
+  allow_unlabeled_all_weeks_fallback: false
 splits:
   train_end: '2024-12-30'
   validation_end: '2025-06-30'

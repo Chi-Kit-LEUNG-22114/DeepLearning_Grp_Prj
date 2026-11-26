@@ -1,0 +1,126 @@
+{
+  "image_embedding__mean": {
+    "components": 16,
+    "explained_variance": 0.7951371669769287,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "image_embedding__std": {
+    "components": 0,
+    "reason": "zero_variance"
+  },
+  "image_embedding__weighted_mean": {
+    "components": 16,
+    "explained_variance": 0.7951371669769287,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "image_embedding__max": {
+    "components": 16,
+    "explained_variance": 0.7951371669769287,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "image_embedding__min": {
+    "components": 16,
+    "explained_variance": 0.7951371669769287,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "title_clip__mean": {
+    "components": 16,
+    "explained_variance": 0.5016912221908569,
+    "fit_scope": "training_dates"
+  },
+  "title_clip__std": {
+    "components": 16,
+    "explained_variance": 0.7691556811332703,
+    "fit_scope": "training_dates"
+  },
+  "title_clip__weighted_mean": {
+    "components": 16,
+    "explained_variance": 0.5025618076324463,
+    "fit_scope": "training_dates"
+  },
+  "title_clip__max": {
+    "components": 16,
+    "explained_variance": 0.5551460385322571,
+    "fit_scope": "training_dates"
+  },
+  "title_clip__min": {
+    "components": 16,
+    "explained_variance": 0.5616310834884644,
+    "fit_scope": "training_dates"
+  },
+  "title_bge__mean": {
+    "components": 8,
+    "explained_variance": 0.2642171382904053,
+    "fit_scope": "training_dates"
+  },
+  "title_bge__std": {
+    "components": 8,
+    "explained_variance": 0.699824869632721,
+    "fit_scope": "training_dates"
+  },
+  "title_bge__weighted_mean": {
+    "components": 8,
+    "explained_variance": 0.26454219222068787,
+    "fit_scope": "training_dates"
+  },
+  "title_bge__max": {
+    "components": 8,
+    "explained_variance": 0.37397241592407227,
+    "fit_scope": "training_dates"
+  },
+  "title_bge__min": {
+    "components": 8,
+    "explained_variance": 0.3740643560886383,
+    "fit_scope": "training_dates"
+  },
+  "comment_mean__mean": {
+    "components": 16,
+    "explained_variance": 0.5073632001876831,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "comment_mean__std": {
+    "components": 16,
+    "explained_variance": 0.9535480737686157,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "comment_mean__weighted_mean": {
+    "components": 16,
+    "explained_variance": 0.5079322457313538,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "comment_mean__max": {
+    "components": 16,
+    "explained_variance": 0.5348033905029297,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "comment_mean__min": {
+    "components": 16,
+    "explained_variance": 0.5352919101715088,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "comment_weighted_mean__mean": {
+    "components": 16,
+    "explained_variance": 0.5073632001876831,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "comment_weighted_mean__std": {
+    "components": 16,
+    "explained_variance": 0.9535478949546814,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "comment_weighted_mean__weighted_mean": {
+    "components": 16,
+    "explained_variance": 0.5079320669174194,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "comment_weighted_mean__max": {
+    "components": 16,
+    "explained_variance": 0.5348032712936401,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  },
+  "comment_weighted_mean__min": {
+    "components": 16,
+    "explained_variance": 0.5352921485900879,
+    "fit_scope": "all_observed_weeks_unlabeled_fallback"
+  }
+}

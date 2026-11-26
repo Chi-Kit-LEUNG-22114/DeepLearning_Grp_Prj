@@ -1,0 +1,43 @@
+{
+  "rows": 5024,
+  "brands": 32,
+  "weeks": 157,
+  "numeric_features": 393,
+  "feature_channels": 393,
+  "input_counts": {
+    "posts": 4102,
+    "late_metric_snapshot_posts": 4069,
+    "image_files_encoded": 29,
+    "image_files_available": 29,
+    "post_text_rows": 4102,
+    "titles_encoded": 4101,
+    "captions_encoded": 0,
+    "posts_with_comments_encoded": 201,
+    "comments_encoded": 2257
+  },
+  "trends_values_present": false,
+  "target_labels_present": false,
+  "issues": [],
+  "missing_rate_top": {
+    "brand_id": 0.0,
+    "title_clip__max__pca_006": 0.0,
+    "title_clip__max__pca_004": 0.0,
+    "title_clip__max__pca_003": 0.0,
+    "title_clip__max__pca_002": 0.0,
+    "title_clip__max__pca_001": 0.0,
+    "title_bge__weighted_mean__pca_008": 0.0,
+    "title_bge__weighted_mean__pca_007": 0.0,
+    "title_bge__weighted_mean__pca_006": 0.0,
+    "title_bge__weighted_mean__pca_005": 0.0,
+    "title_bge__weighted_mean__pca_004": 0.0,
+    "title_bge__weighted_mean__pca_003": 0.0,
+    "title_bge__weighted_mean__pca_002": 0.0,
+    "title_bge__weighted_mean__pca_001": 0.0,
+    "title_bge__std__pca_008": 0.0,
+    "title_bge__std__pca_007": 0.0,
+    "title_bge__std__pca_006": 0.0,
+    "title_bge__std__pca_005": 0.0,
+    "title_bge__std__pca_004": 0.0,
+    "title_bge__std__pca_003": 0.0
+  }
+}

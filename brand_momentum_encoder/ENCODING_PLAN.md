@@ -88,6 +88,11 @@ A configurable multilingual sentiment model may generate probabilities. Sentimen
 
 ## 5. Scattered-data intake
 
+The current operational input is the already-aggregated JSON produced by
+`../embedding_json_package/build_embedding_json.py`. Script
+`01_validate_raw_data.py` flattens its brand/video/comment hierarchy into the
+canonical tables below. A source manifest remains available for other inputs.
+
 Raw data are not yet finalized. The ingestion layer is deliberately general.
 
 ### Supported source types
@@ -364,3 +369,34 @@ Phase 1 is complete when:
 - train-only preprocessing is enforced
 - sequences and long-form outputs can be consumed by downstream forecasters
 - all final features have a feature dictionary and run manifest
+
+## Current test run and limitations
+
+The current encoder reads
+`../embedding_json_package/build_embedding_input.json` without rewriting its
+Google Trends or target-label sections. That input contains 32 brands, 4,102
+videos, and 4,824 comments; no weekly numeric Trends values or target labels are
+available. The test run therefore creates unlabeled inputs only.
+
+Observed output: 5,024 brand-week rows (32 brands × 157 shared weeks), 393
+numeric channels per week, and 3,392 52-week windows. Mean, engagement-weighted
+mean, standard deviation, elementwise max, and elementwise min pooling are
+enabled for the available embedding blocks. The encoder matched 29 local
+thumbnails by video ID and generated CLIP image vectors; title text is encoded
+by both BGE and CLIP.
+
+Video counts (likes, reported comments, views, and any available shares or
+impressions) are retained and summarized. In this snapshot, 4,069 of 4,102
+posts have engagement metrics retrieved after their publication week. They are
+included for this requested embedding test and flagged, but should not be used
+as historical forecasting covariates until time-aligned snapshots are
+available. Comments later than the input week's Sunday remain excluded.
+
+This describes the original unlabeled test output: the thumbnail block had no
+training-period examples, so its PCA used all observed thumbnail weeks under
+the then-enabled unlabeled fallback. The current pipeline config disables that
+fallback. For supervised transfer learning,
+`brand_momentum_transfer_learning/prepare_data.py` passes the shared 70:10:20 training cutoff to
+`07_fit_feature_reducers.py` and rebuilds the reduced weekly vectors with
+`08_build_weekly_vectors.py`. Sparse blocks without sufficient training-date
+observations are omitted; no validation/test weeks are used to fit PCA.

@@ -59,5 +59,8 @@ def numeric(df: pd.DataFrame, cols: Iterable[str]) -> pd.DataFrame:
 
 def select_device(name: str):
     import torch
-    if name=="auto": return "cuda" if torch.cuda.is_available() else "cpu"
+    if name=="auto":
+        if torch.cuda.is_available(): return "cuda"
+        if getattr(torch.backends,"mps",None) is not None and torch.backends.mps.is_available(): return "mps"
+        return "cpu"
     return name
