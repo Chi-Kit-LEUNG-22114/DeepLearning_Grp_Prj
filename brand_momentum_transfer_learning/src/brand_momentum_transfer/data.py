@@ -39,6 +39,8 @@ def _as_dates(values: pd.Series, name: str) -> pd.Series:
 
 
 def _feature_group(name: str) -> str:
+    if name == "google_trends" or name.startswith(("gt_", "trends_available")):
+        return "search_trends"
     if name.startswith(("comment_mean__", "comment_weighted_mean__")):
         return "comments_bge"
     if name.startswith("image_embedding__"):
@@ -58,6 +60,20 @@ def _feature_group(name: str) -> str:
     )):
         return "availability_quality"
     return "numeric_context"
+
+
+def select_feature_set(feature_names: list[str], feature_set: str) -> list[str]:
+    """Select ablation inputs without changing samples, labels, or split dates."""
+    if feature_set not in {"multimodal", "search_only", "social_only"}:
+        raise ValueError(f"Unknown data.feature_set: {feature_set!r}")
+    selected = [name for name in feature_names if (
+        feature_set == "multimodal"
+        or (feature_set == "search_only" and _feature_group(name) == "search_trends")
+        or (feature_set == "social_only" and _feature_group(name) != "search_trends")
+    )]
+    if not selected:
+        raise ValueError(f"No eligible input columns for feature set {feature_set!r}.")
+    return selected
 
 
 def _feature_columns(
@@ -382,6 +398,8 @@ def prepare_splits(config: dict[str, Any], project_root: Path) -> PreparedSplits
         "geo", "query", "source_name", "source_file",
     }
     feature_names = _feature_columns(feature_df, metadata, patterns)
+    feature_set = data_cfg.get("feature_set", "multimodal")
+    feature_names = select_feature_set(feature_names, feature_set)
     train_end = pd.Timestamp(split_summary["train_end"])
     fit_dates = set(feature_df.loc[feature_df[week_col] <= train_end, week_col])
     # Fit model-input normalization only on rows inside the shared train dates.
@@ -438,6 +456,7 @@ def prepare_splits(config: dict[str, Any], project_root: Path) -> PreparedSplits
         "feature_path": str(feature_path),
         "label_path": str(label_path),
         "feature_count": len(feature_names),
+        "feature_set": feature_set,
         "feature_names": feature_names,
         "feature_groups": {name: len(indices) for name, indices in feature_groups.items()},
         "feature_groups_indices": feature_groups,

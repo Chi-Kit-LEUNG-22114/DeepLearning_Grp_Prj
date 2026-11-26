@@ -17,15 +17,22 @@ def main() -> None:
         description="Train TTM and Chronos-2 using the same saved 70:10:20 split."
     )
     parser.add_argument("--config", default="config/default.yaml")
+    parser.add_argument("--feature-set", choices=["multimodal", "search_only", "social_only"],
+                        help="Run an isolated ablation under outputs/ablations/<feature-set>/.")
     args = parser.parse_args()
     config, project_root = load_config(PROJECT_ROOT / args.config)
+    if args.feature_set:
+        config["data"]["feature_set"] = args.feature_set
+        config["paths"]["output"] = str(
+            Path(config["paths"]["output"]) / "ablations" / args.feature_set
+        )
     results = train_comparison(config, project_root)
     for result in results:
         print(
             f"{result['model']}: "
             f"validation MAE={result['validation']['mae']:.4f}, "
             f"test MAE={result['test']['mae']:.4f}, "
-            f"best_epoch={result['best_epoch']}"
+            f"best_epoch={result.get('best_epoch', 'n/a')}"
         )
 
 

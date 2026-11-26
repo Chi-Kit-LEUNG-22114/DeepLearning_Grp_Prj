@@ -17,6 +17,7 @@ columns:
   target_period: target_period
 
 data:
+  feature_set: multimodal
   context_length: 52
   train_fraction: 0.70
   validation_fraction: 0.10
@@ -60,3 +61,13 @@ models:
     model_id: autogluon/chronos-2
     latent_channels_per_block: 2
     num_output_patches: 1
+
+baselines:
+  enabled: true
+  # Chosen using validation MAE only; test labels never select alpha.
+  ridge_alphas: [0.1, 1.0, 10.0, 100.0]
+
+reporting:
+  # Absolute change in predicted BMI units, not a percentage or a sales signal.
+  # Zero labels any positive/negative revision; set a larger agreed deadband if needed.
+  change_threshold: 0.0

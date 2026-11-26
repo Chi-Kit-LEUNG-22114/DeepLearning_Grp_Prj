@@ -19,7 +19,8 @@ brand_momentum_transfer_learning/
 ├── src/brand_momentum_transfer/
 │   ├── data.py                  # Join, chronological split, train-only scaling, windows
 │   ├── training.py              # Shared train/evaluate/checkpoint loop
-│   ├── inference.py             # Reuse checkpoints on new weekly feature tables
+│   ├── evaluation.py            # Metrics, date-wise rankings, watchlists; no training
+│   ├── baselines.py             # Training mean and validation-selected Ridge references
 │   └── models/
 │       ├── common.py            # Per-modality adapters and scalar regression head
 │       ├── ttm.py               # TTM r2.1 transfer-learning model
@@ -27,6 +28,8 @@ brand_momentum_transfer_learning/
 ├── prepare_data.py
 ├── train_compare.py
 ├── predict.py
+├── evaluate_results.py          # Evaluate saved CSVs without loading models
+├── run_baselines.py             # Fit references using existing shared splits
 └── outputs/
     ├── shared/                  # One immutable set of splits and preprocessing
     ├── models/ttm/              # TTM checkpoint and predictions
@@ -201,3 +204,114 @@ No classifier is trained. If BMI tiers are later required, derive them from the 
 - Keep a `target_period` where available to audit the future label association.
 - Preserve the generated shared split artifacts when comparing additional model variants.
 - Training, model downloads, and inference are intentionally not triggered by project creation.
+
+## 10. Evaluation and reporting additions
+
+The additions extend the existing encoder/transfer architecture. They do not define
+or recalculate BMI. They use the supplied scalar labels and assume higher BMI means
+stronger momentum. No training or model downloads occur on import.
+
+### Baselines and model comparison
+
+`train_compare.py` now also evaluates a training-mean predictor and Ridge regression
+when `baselines.enabled` is true. Both use the exact saved shared samples. Ridge
+uses each channel's last value, history mean, and last-minus-first change. Its
+additional scaler is fitted on training windows only. Alpha is selected using
+validation MAE; test labels never choose hyperparameters. Coefficients, scaling,
+and selection scores are saved under `outputs/baselines/ridge/model.json`.
+
+To fit only these small references later, after shared splits exist:
+
+```bash
+python run_baselines.py --config config/default.yaml
+```
+
+This command **fits baseline models**. It does not train TTM/Chronos-2 or download
+weights. No persistence baseline is fabricated: the current input contract does
+not supply an observed current BMI with its availability date.
+
+### Offline reports from saved predictions
+
+The following command only reads saved prediction CSVs and generates reports:
+
+```bash
+python evaluate_results.py --split test
+python evaluate_results.py --split validation
+```
+
+It discovers neural and baseline predictions, rejects comparisons with different
+sample IDs/target dates/actual outcomes, and writes
+`outputs/comparison/{split}_evaluation.csv`. It never prepares data, fits a model,
+loads a checkpoint, or downloads weights. If predictions do not exist, it stops
+with an explicit error.
+
+For each model and split, reports include:
+
+- `{split}_evaluation.json`: MAE, RMSE, bias, R-squared, correlations, and ranking metrics.
+- `{split}_per_brand_metrics.csv`: errors and correlations for each brand.
+- `{split}_ranking_metrics.csv`: Spearman correlation and rank error for each input date.
+- `{split}_ranked_predictions.csv`: predictions, actual outcomes, and portfolio ranks.
+- `{split}_error_cases.csv`: up to 20 largest absolute errors for case analysis.
+- `{split}_watchlist.csv`: the latest snapshot, previous predicted score/rank, changes,
+  and suggested review actions.
+
+`mean_date_spearman` is the unweighted mean of valid within-date rank correlations,
+not a correlation pooled across different dates. `ranked_date_count` states how
+many dates have defined correlations. Constant predictions, constant outcomes,
+and single-brand dates have undefined correlations (JSON `null`). Ties receive
+average ranks. Every input date must have one common target period when supplied.
+
+Watchlist statuses describe changes in **predicted BMI scores**, not observed
+growth, forecast accuracy, sales, or causal business impact. A change larger than
+`reporting.change_threshold` is gaining traction, a change below the negative
+threshold is losing momentum, and the deadband is stable. The default threshold
+is zero BMI units; set an agreed materiality threshold before presenting results.
+These statuses do not apply Assignment 4's absolute-score classification thresholds.
+Missing prior predictions produce `Insufficient history`. Rank improvements are
+omitted when portfolio membership changes. Different known forecast horizons are
+reported separately; unknown horizons remain explicitly blank.
+
+Watchlists can also be exported during checkpoint inference:
+
+```bash
+python predict.py --model-dir outputs/models/ttm/best \
+  --features ../brand_momentum_encoder/output/weekly/brand_week_features.parquet \
+  --output outputs/models/ttm/new_predictions.csv \
+  --watchlist-output outputs/models/ttm/portfolio_watchlist.csv
+```
+
+### Feature ablations for a later training run
+
+```bash
+python train_compare.py --feature-set multimodal
+python train_compare.py --feature-set search_only
+python train_compare.py --feature-set social_only
+```
+
+These commands **run training**. They are provided for the eventual experiment,
+not required to test the new code. Outputs are isolated under
+`outputs/ablations/<feature-set>/`. The same labels, split algorithm, context, and
+leakage exclusions apply to all three. Search inputs are `google_trends`, `gt_*`,
+and `trends_available*`; remaining eligible encoder channels are social inputs.
+A search-only run fails explicitly if the feature table has no search channels.
+For offline reports on an ablation, pass
+`--output-root outputs/ablations/search_only` to `evaluate_results.py`.
+
+### Correctness fixes and local verification
+
+Single-channel modality adapters skip LayerNorm because normalizing one scalar
+erases its input signal. Existing one-channel TTM checkpoints from the old
+architecture are incompatible and must be retrained. Wider adapters retain their
+normalization. Validation loss is now weighted by sample count, so a short final
+batch cannot disproportionately affect early stopping.
+
+Tests run on small fixtures without training pretrained models or accessing the Hub:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+They cover signal/gradient flow, adapter reload, ranking cohorts, watchlist changes,
+comparison alignment, ablation selection, strict JSON, and the offline report CLI.
+Actual TTM/Chronos-2 forward passes, full checkpoint reloads, model fitting, and
+experiment quality still require a later run in the model dependency environment.

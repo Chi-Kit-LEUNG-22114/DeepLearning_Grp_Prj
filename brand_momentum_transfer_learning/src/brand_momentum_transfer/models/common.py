@@ -18,6 +18,8 @@ class ModalityAdapters(nn.Module):
         super().__init__()
         if not feature_groups:
             raise ValueError("At least one feature group is required.")
+        if latent_channels_per_block < 1:
+            raise ValueError("latent_channels_per_block must be positive.")
         self.group_names = list(feature_groups)
         self.group_indices = {
             name: torch.as_tensor(indices, dtype=torch.long)
@@ -32,7 +34,9 @@ class ModalityAdapters(nn.Module):
             self.adapters[name] = nn.Sequential(
                 nn.Linear(len(indices), latent_channels_per_block),
                 nn.GELU(),
-                nn.LayerNorm(latent_channels_per_block),
+                # LayerNorm(1) always removes the input-dependent signal.
+                nn.LayerNorm(latent_channels_per_block)
+                if latent_channels_per_block > 1 else nn.Identity(),
                 nn.Dropout(dropout),
             )
             self.channel_slices[name] = (
@@ -94,6 +98,7 @@ class TransferModelBase(nn.Module):
 def ordered_feature_groups(groups: dict[str, list[int]]) -> dict[str, list[int]]:
     # Stable ordering makes adapter channels and checkpoints reproducible.
     preferred = (
+        "search_trends",
         "comments_bge",
         "images_clip",
         "titles_bge",

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import random
 import shutil
 import subprocess
@@ -22,6 +21,7 @@ from .data import (
     save_prepared_splits,
 )
 from .models import Chronos2MultimodalRegressor, TTMMultimodalRegressor
+from .evaluation import export_evaluation, regression_metrics, write_json
 
 
 def seed_everything(seed: int) -> None:
@@ -39,8 +39,7 @@ def resolve_device(setting: str) -> torch.device:
 
 
 def _json_write(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, default=str), encoding="utf-8")
+    write_json(path, value)
 
 
 def _make_model(
@@ -68,25 +67,7 @@ def _loader(arrays: dict[str, np.ndarray], batch_size: int, shuffle: bool) -> Da
 
 
 def _score(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
-    y_true = np.asarray(y_true, dtype=np.float64)
-    y_pred = np.asarray(y_pred, dtype=np.float64)
-    error = y_pred - y_true
-    denom = float(np.sum((y_true - y_true.mean()) ** 2))
-    r2 = float(1.0 - np.sum(error ** 2) / denom) if denom > 1e-12 else float("nan")
-    if len(y_true) > 1 and np.std(y_true) > 1e-12 and np.std(y_pred) > 1e-12:
-        pearson = float(np.corrcoef(y_true, y_pred)[0, 1])
-        spearman = float(pd.Series(y_true).corr(pd.Series(y_pred), method="spearman"))
-    else:
-        pearson = float("nan")
-        spearman = float("nan")
-    return {
-        "mae": float(np.mean(np.abs(error))),
-        "rmse": float(np.sqrt(np.mean(error ** 2))),
-        "r2": r2,
-        "pearson": pearson,
-        "spearman": spearman,
-        "n": int(len(y_true)),
-    }
+    return regression_metrics(y_true, y_pred)
 
 
 def _predict_scaled(
@@ -216,7 +197,8 @@ def train_one_model(
         model.train()
         if epoch < freeze_epochs:
             model.pretrained.eval()
-        train_losses = []
+        train_loss_total = 0.0
+        train_count = 0
         for x, y in train_loader:
             x = x.to(device)
             y = y.to(device)
@@ -228,18 +210,21 @@ def train_one_model(
                 model.parameters(), float(training_cfg["gradient_clip_norm"])
             )
             optimizer.step()
-            train_losses.append(float(loss.detach().cpu()))
+            train_loss_total += float(loss.detach().cpu()) * len(y)
+            train_count += len(y)
 
         model.eval()
-        val_losses = []
+        val_loss_total = 0.0
+        val_count = 0
         with torch.no_grad():
             for x, y in validation_loader:
                 prediction = model(x.to(device))
-                val_losses.append(
-                    float(loss_fn(prediction.reshape_as(y.to(device)), y.to(device)).cpu())
-                )
-        train_loss = float(np.mean(train_losses)) if train_losses else float("nan")
-        val_loss = float(np.mean(val_losses)) if val_losses else float("nan")
+                val_loss_total += float(
+                    loss_fn(prediction.reshape_as(y.to(device)), y.to(device)).cpu()
+                ) * len(y)
+                val_count += len(y)
+        train_loss = train_loss_total / train_count if train_count else float("nan")
+        val_loss = val_loss_total / val_count if val_count else float("nan")
         history.append(
             {"epoch": epoch + 1, "train_huber": train_loss, "validation_huber": val_loss}
         )
@@ -297,6 +282,7 @@ def train_one_model(
             "seed": int(training_cfg["seed"]),
             "pretrained_frozen_epochs": freeze_epochs,
             "device": str(device),
+            "training_config": training_cfg,
         },
     )
 
@@ -307,7 +293,6 @@ def train_one_model(
         )
         y_true = arrays[split_name]["y_raw"].astype(np.float64)
         y_pred = prediction_scaled.astype(np.float64) * target_scale + target_mean
-        split_metrics[split_name] = _score(y_true, y_pred)
         table = pd.DataFrame(
             {
                 "brand_id": arrays[split_name]["brand_id"],
@@ -317,9 +302,14 @@ def train_one_model(
                 "bmi_actual": y_true,
                 "bmi_predicted": y_pred,
                 "residual": y_pred - y_true,
+                "model": model_name,
             }
         )
         table.to_csv(model_dir / f"{split_name}_predictions.csv", index=False)
+        split_metrics[split_name] = export_evaluation(
+            table, model_dir, split_name,
+            float(config.get("reporting", {}).get("change_threshold", 0.0)),
+        )
 
     result = {
         "model": model_name,
@@ -343,15 +333,18 @@ def train_comparison(config: dict[str, Any], project_root: Path) -> list[dict[st
     results = []
     for model_name in ("ttm", "chronos2"):
         results.append(train_one_model(model_name, config, project_root, output_dir))
+    if config.get("baselines", {}).get("enabled", True):
+        from .baselines import run_baselines
+        results.extend(run_baselines(output_dir, config))
     comparison_dir = output_dir / "comparison"
     comparison_dir.mkdir(parents=True, exist_ok=True)
     rows = []
     for result in results:
         row = {
             "model": result["model"],
-            "base_model_id": result["base_model_id"],
-            "base_revision": result["base_revision"],
-            "best_epoch": result["best_epoch"],
+            "base_model_id": result.get("base_model_id"),
+            "base_revision": result.get("base_revision"),
+            "best_epoch": result.get("best_epoch"),
             "train_samples": result["split_counts"]["train"],
             "validation_samples": result["split_counts"]["validation"],
             "test_samples": result["split_counts"]["test"],

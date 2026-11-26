@@ -20,6 +20,7 @@ from brand_momentum_transfer.models import (  # noqa: E402
     TTMMultimodalRegressor,
 )
 from brand_momentum_transfer.training import resolve_device  # noqa: E402
+from brand_momentum_transfer.evaluation import build_watchlist  # noqa: E402
 
 
 def main() -> None:
@@ -36,7 +37,16 @@ def main() -> None:
     parser.add_argument("--brand-column", default="brand_id")
     parser.add_argument("--week-column", default="week_start")
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--watchlist-output", help="Optional CSV of latest predicted ranks and changes.")
+    parser.add_argument("--change-threshold", type=float, default=0.0,
+                        help="Minimum absolute BMI score change for gaining/losing status.")
     args = parser.parse_args()
+    output_path = Path(args.output).expanduser().resolve()
+    watchlist_path = Path(args.watchlist_output).expanduser().resolve() if args.watchlist_output else None
+    if watchlist_path == output_path:
+        raise ValueError("Watchlist and predictions must use different output paths.")
+    if not np.isfinite(args.change_threshold) or args.change_threshold < 0:
+        raise ValueError("change-threshold must be finite and non-negative.")
 
     checkpoint_dir = Path(args.model_dir).expanduser().resolve()
     model_meta = json.loads(
@@ -105,9 +115,12 @@ def main() -> None:
             "model": model_name,
         }
     )
-    output_path = Path(args.output).expanduser().resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     result.to_csv(output_path, index=False)
+    if watchlist_path is not None:
+        watchlist = build_watchlist(result, args.change_threshold)
+        watchlist_path.parent.mkdir(parents=True, exist_ok=True)
+        watchlist.to_csv(watchlist_path, index=False)
     print(f"Wrote {len(result)} BMI predictions to {output_path}")
 
 
