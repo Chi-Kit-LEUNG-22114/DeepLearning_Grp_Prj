@@ -1,0 +1,1 @@
+Place the BMI label table here. The default filename is `bmi_labels.csv`. Required columns: `brand_id`, `input_week_start`, and `bmi`. The optional `target_period` column is recommended for auditing and chronological splitting.

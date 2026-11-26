@@ -1,0 +1,11 @@
+numpy>=1.26
+pandas>=2.1
+pyarrow>=14
+PyYAML>=6.0
+scikit-learn>=1.4
+torch>=2.3
+transformers>=4.51,<5
+granite-tsfm>=0.2.0
+chronos-forecasting>=2.2.0
+safetensors>=0.4
+tqdm>=4.66

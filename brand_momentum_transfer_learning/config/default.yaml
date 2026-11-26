@@ -1,0 +1,62 @@
+paths:
+  weekly_features: ../brand_momentum_encoder/output/weekly/brand_week_features.parquet
+  labels: data/labels/bmi_labels.csv
+  output: outputs
+
+encoder:
+  root: ../brand_momentum_encoder
+  pipeline_config: config/pipeline.yaml
+  refit_preprocessing_for_shared_split: true
+
+columns:
+  brand_id: brand_id
+  week_start: week_start
+  label_brand_id: brand_id
+  input_week_start: input_week_start
+  target: bmi
+  target_period: target_period
+
+data:
+  context_length: 52
+  train_fraction: 0.70
+  validation_fraction: 0.10
+  test_fraction: 0.20
+  # These columns/prefixes were identified as unsafe in the current encoder run:
+  # engagement counts are mostly snapshots collected after publication.
+  exclude_feature_patterns:
+    - __weighted_mean
+    - comment_weighted_mean__
+    - metrics_snapshot_late_posts
+    - engagement_weight_total
+    - likes_
+    - comments_count_
+    - shares_
+    - views_
+    - impressions_
+
+training:
+  seed: 42
+  epochs: 40
+  batch_size: 8
+  chronos2_batch_size: 2
+  patience: 7
+  min_delta: 0.0001
+  freeze_pretrained_epochs: 3
+  head_learning_rate: 0.001
+  ttm_learning_rate: 0.00001
+  chronos2_learning_rate: 0.000003
+  weight_decay: 0.0001
+  gradient_clip_norm: 1.0
+  device: auto
+
+models:
+  ttm:
+    model_id: ibm-granite/granite-timeseries-ttm-r2
+    revision: 52-16-ft-r2.1
+    prediction_length: 16
+    latent_channels_per_block: 1
+    frequency_token: 9
+  chronos2:
+    model_id: autogluon/chronos-2
+    latent_channels_per_block: 2
+    num_output_patches: 1
